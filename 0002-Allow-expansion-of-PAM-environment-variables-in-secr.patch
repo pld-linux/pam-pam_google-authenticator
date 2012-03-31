@@ -1,0 +1,62 @@
+From 82eae28e2fd4f7ddfcbc185c7478db5806b4b4ea Mon Sep 17 00:00:00 2001
+From: David Woodhouse <David.Woodhouse@intel.com>
+Date: Mon, 26 Sep 2011 23:55:55 +0100
+Subject: [PATCH 2/2] Allow expansion of PAM environment variables in secret
+ file name
+
+https://bugzilla.mindrot.org/show_bug.cgi?id=983#c43 makes OpenSSH set
+a PAM environment variable indicating which SSH public key was used to
+authenticate. This lets Google Authenticator use that information (or
+anything else in PAM environment variables) to select an appropriate
+secret file.
+---
+ libpam/Makefile                   |    4 ++--
+ libpam/pam_google_authenticator.c |   13 ++++++++++++-
+ 2 files changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/libpam/Makefile b/libpam/Makefile
+index 9137d68..fbe93a8 100644
+--- a/libpam/Makefile
++++ b/libpam/Makefile
+@@ -60,7 +60,7 @@ google-authenticator: google-authenticator.o base32.o hmac.o sha1.o
+ 	      echo " -ldl") -o $@ $+
+ 
+ demo: demo.o pam_google_authenticator_demo.o base32.o hmac.o sha1.o
+-	$(CC) -g $(DEF_LDFLAGS) -rdynamic                                     \
++	$(CC) -g $(DEF_LDFLAGS) -rdynamic -lpam                                    \
+ 	      $(shell [ -f /usr/lib/libdl.so ] && echo " -ldl") -o $@ $+
+ 
+ pam_google_authenticator_unittest: pam_google_authenticator_unittest.o        \
+@@ -92,4 +92,4 @@ sha1.o: sha1.c sha1.h
+ .c.o:
+ 	$(CC) --std=gnu99 -Wall -O2 -g -fPIC -c $(DEF_CFLAGS) -o $@ $<
+ .o.so:
+-	$(CC) -shared -g $(DEF_LDFLAGS) -o $@ $+
++	$(CC) -shared -g $(DEF_LDFLAGS) -lpam -o $@ $+
+diff --git a/libpam/pam_google_authenticator.c b/libpam/pam_google_authenticator.c
+index 1b83c38..4708c1e 100644
+--- a/libpam/pam_google_authenticator.c
++++ b/libpam/pam_google_authenticator.c
+@@ -170,7 +170,18 @@ static char *get_secret_filename(pam_handle_t *pamh, const Params *params,
+       subst = pw->pw_dir;
+       var = cur;
+     } else if (secret_filename[offset] == '$') {
+-      if (!memcmp(cur, "${HOME}", 7)) {
++      if (!memcmp(cur, "${PAM:", 6)) {
++	char *cls = strchr(cur + 6, '}');
++	if (cls) {
++	  char *envname = strndup(cur + 6, cls - cur - 6);
++	  subst = pam_getenv(pamh, envname);
++	  if (!subst)
++	    subst = "";
++	  free (envname);
++	  var = cur;
++	  var_len = cls - cur + 1;
++	}
++      } else if (!memcmp(cur, "${HOME}", 7)) {
+         var_len = 7;
+         subst = pw->pw_dir;
+         var = cur;
+-- 
+1.7.6.2
+
