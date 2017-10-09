@@ -1,22 +1,23 @@
+# TODO
+# - re-check validity of patches (drop/update/upstreamify)
 #
 # Conditional build:
-%bcond_with	tests		# build with tests
+%bcond_without	tests		# build with tests
 
-%define snapshot d525a9bab875
-%define snapdate 20110830
 Summary:	PAM module for One-time passcode support using open standards
 Name:		pam-pam_google-authenticator
-Version:	0
-Release:	0.3.%{snapdate}.hg%{snapshot}
-License:	ASL 2.0
-URL:		http://code.google.com/p/google-authenticator/
-# hg archive -r ${snapshot} %{name}-0.%{snapdate}.hg%{snapshot}.tar.gz
-#Source0:        %{name}-0.%{snapdate}.hg%{snapshot}.tar.gz
+Version:	1.04
+Release:	1
+License:	Apache v2.0
 Group:		Libraries
-Source0:	http://pkgs.fedoraproject.org/repo/pkgs/google-authenticator/google-authenticator-0.20110830.hgd525a9bab875.tar.gz/82b01c66812d1a2ceef51c0e375c18f3/google-authenticator-0.20110830.hgd525a9bab875.tar.gz
-# Source0-md5:	82b01c66812d1a2ceef51c0e375c18f3
+Source0:	https://github.com/google/google-authenticator-libpam/archive/%{version}/google-authenticator-libpam-%{version}.tar.gz
+# Source0-md5:	4b08a0a5dca2835499c790d67bf8f736
 Patch1:		0001-Add-no-drop-privs-option-to-manage-secret-files-as-r.patch
 Patch2:		0002-Allow-expansion-of-PAM-environment-variables-in-secr.patch
+URL:		https://github.com/google/google-authenticator-libpam
+BuildRequires:	autoconf
+BuildRequires:	automake
+BuildRequires:	libtool
 BuildRequires:	pam-devel
 BuildRequires:	qrencode-devel
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
@@ -35,33 +36,35 @@ algorithm specified in RFC 4226 and the Time-based One-time Password
 (TOTP) algorithm currently in draft.
 
 %prep
-%setup -q -n google-authenticator-%{version}.%{snapdate}.hg%{snapshot}
-%patch1 -p1
-%patch2 -p1
+%setup -q -n google-authenticator-libpam-%{version}
+#%patch1 -p1
+#%patch2 -p1
 
 %build
-%{__make} -C libpam \
-	CC="%{__cc}" \
-	CFLAGS="%{rpmcflags}" \
-	LDFLAGS="-ldl"
-
-%if %{with tests}
-cd libpam
-./pam_google_authenticator_unittest
-%endif
+%{__aclocal} -I build
+%{__libtoolize}
+%{__autoconf}
+%{__autoheader}
+%{__automake}
+%configure \
+	--libdir=/%{_lib}
+%{__make} %{?with_tests:check}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-install -d $RPM_BUILD_ROOT{/%{_lib}/security,%{_bindir}}
-cd libpam
-install -p pam_google_authenticator.so $RPM_BUILD_ROOT/%{_lib}/security
-install -p google-authenticator $RPM_BUILD_ROOT%{_bindir}/google-authenticator
+%{__make} install \
+	DESTDIR=$RPM_BUILD_ROOT
+
+%{__rm} $RPM_BUILD_ROOT/%{_lib}/security/pam_google_authenticator.la
+%{__rm} -r $RPM_BUILD_ROOT%{_docdir}/google-authenticator
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(644,root,root,755)
-%doc libpam/FILEFORMAT libpam/README libpam/totp.html
+%doc FILEFORMAT README.md totp.html
 %attr(755,root,root) /%{_lib}/security/pam_google_authenticator.so
 %attr(755,root,root) %{_bindir}/google-authenticator
+%{_mandir}/man1/google-authenticator.1*
+%{_mandir}/man8/pam_google_authenticator.8*
