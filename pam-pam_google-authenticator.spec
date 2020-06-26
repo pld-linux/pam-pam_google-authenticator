@@ -6,14 +6,12 @@
 
 Summary:	PAM module for One-time passcode support using open standards
 Name:		pam-pam_google-authenticator
-Version:	1.04
+Version:	1.09
 Release:	1
 License:	Apache v2.0
 Group:		Libraries
 Source0:	https://github.com/google/google-authenticator-libpam/archive/%{version}/google-authenticator-libpam-%{version}.tar.gz
-# Source0-md5:	4b08a0a5dca2835499c790d67bf8f736
-Patch1:		0001-Add-no-drop-privs-option-to-manage-secret-files-as-r.patch
-Patch2:		0002-Allow-expansion-of-PAM-environment-variables-in-secr.patch
+# Source0-md5:	c0a5624f53d64f851775fe7e94732651
 URL:		https://github.com/google/google-authenticator-libpam
 BuildRequires:	autoconf
 BuildRequires:	automake
@@ -37,8 +35,6 @@ algorithm specified in RFC 4226 and the Time-based One-time Password
 
 %prep
 %setup -q -n google-authenticator-libpam-%{version}
-#%patch1 -p1
-#%patch2 -p1
 
 %build
 %{__aclocal} -I build
