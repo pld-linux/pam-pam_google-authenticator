@@ -6,12 +6,12 @@
 
 Summary:	PAM module for One-time passcode support using open standards
 Name:		pam-pam_google-authenticator
-Version:	1.09
+Version:	1.10
 Release:	1
 License:	Apache v2.0
 Group:		Libraries
 Source0:	https://github.com/google/google-authenticator-libpam/archive/%{version}/google-authenticator-libpam-%{version}.tar.gz
-# Source0-md5:	c0a5624f53d64f851775fe7e94732651
+# Source0-md5:	9c643677d5a1516290bbac91c142f479
 URL:		https://github.com/google/google-authenticator-libpam
 BuildRequires:	autoconf
 BuildRequires:	automake
